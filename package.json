@@ -16,7 +16,7 @@
     "site",
     "generator",
     "markdown"
-  ],  
+  ],
   "author": {
     "name": "Manish Parekh",
     "email": "npm@t3hmun.com",
@@ -27,5 +27,10 @@
     "url": "https://github.com/t3hmun/t3h-static-site-generator/issues",
     "email": "npm@t3hmun.com"
   },
-  "homepage": "https://github.com/t3hmun/t3h-static-site-generator#readme"
+  "homepage": "https://github.com/t3hmun/t3h-static-site-generator#readme",
+  "dependencies": {
+    "less": "^2.7.2",
+    "pug": "^2.0.0-beta11",
+    "t3h-fs-helper": "^1.0.0"
+  }
 }
