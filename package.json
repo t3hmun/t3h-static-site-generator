@@ -1,0 +1,31 @@
+{
+  "name": "t3h-static-site-generator",
+  "version": "1.0.0",
+  "description": "Simple markdown static site generator script for dev's blogs.",
+  "main": "pub.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/t3hmun/t3h-static-site-generator.git"
+  },
+  "keywords": [
+    "static site generator",
+    "static",
+    "site",
+    "generator",
+    "markdown"
+  ],  
+  "author": {
+    "name": "Manish Parekh",
+    "email": "npm@t3hmun.com",
+    "web": "http://www.t3hmun.com"
+  },
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/t3hmun/t3h-static-site-generator/issues",
+    "email": "npm@t3hmun.com"
+  },
+  "homepage": "https://github.com/t3hmun/t3h-static-site-generator#readme"
+}
