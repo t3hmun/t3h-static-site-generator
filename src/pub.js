@@ -68,7 +68,6 @@ function loadConfig() {
         errorAndExit(err)
     }).then((site) => {
         let debug = false;
-        let outputDir = site.outputDir;
         let test = false;
 
         if (process.argv.length > 2) {
@@ -80,9 +79,11 @@ function loadConfig() {
             if (process.argv.find((e) => e == 'test')) {
                 test = true;
                 // Fully resolved path allows testing without server.
-                site.baseUrl = 'file:///' + path.resolve('./test');
-                outputDir = path.resolve('./test');
-                debug && console.log('test outputDir=' + outputDir);
+                site.baseUrl = 'file:///' + path.resolve(site.testDir);
+                // Replace outputDir with testDir.
+                site.outputDir.dir = path.resolve(site.testDir);
+
+                debug && console.log('test outputDir=' + site.outputDir.dir);
                 console.log(' Test mode activated.');
             }
             console.log('');
@@ -157,7 +158,9 @@ function publish() {
 
         let writeJS = Promise.all([dirsCreated, jsLoaded]).then((results) => {
             let jsFiles = results[1];
-            let writeArr = Array.from(jsFiles, (item)=>{return [outDirs.js, item.name, item.data]});
+            let writeArr = Array.from(jsFiles, (item) => {
+                return [outDirs.js, item.name, item.data]
+            });
             return t3hfs.writeMany(writeArr);
         }).catch((err) => {
             errorAndExit(err)
