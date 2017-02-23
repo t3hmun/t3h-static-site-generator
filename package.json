@@ -4,7 +4,8 @@
   "description": "Simple markdown static site generator script for dev's blogs.",
   "main": "pub.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "init": "node ./src/init.js"
   },
   "repository": {
     "type": "git",
@@ -29,7 +30,9 @@
   },
   "homepage": "https://github.com/t3hmun/t3h-static-site-generator#readme",
   "dependencies": {
+    "highlight.js": "^9.9.0",
     "less": "^2.7.2",
+    "markdown-it": "^8.3.0",
     "pug": "^2.0.0-beta11",
     "t3h-fs-helper": "^1.0.0"
   }

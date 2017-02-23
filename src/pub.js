@@ -4,133 +4,172 @@ const path = require('path');
 const md = require('./md');
 const pug = require('pug');
 const less = require('less');
-const effess = require('t3h-fs-helper');
+const t3hfs = require('t3h-fs-helper');
 
-publish(...configure());
+const CONFIG_FILE_NAME = 'config.json';
+
+module.exports.generateDefaultConfig = generateDefaultConfig;
+module.exports.publish = publish;
+module.exports.CONFIG_FILE_NAME = CONFIG_FILE_NAME;
 
 /**
- * Manually edit config here. Anything that was a global is now in here.
- * @return {*[]} Config that can be spread for publish call params.
+ * Generates a default template config.
+ * @return {string} - JSON of the site config.
  */
-function configure() {
-    // Default config, modified by args after.
-    let debug = false;
-    let outputDir = './t3hmun.github.io';
-    let test = false;
-
-    const site = {
-        title: 't3hmun',
-        description: 't3hmun\'s web log',
+function generateDefaultConfig() {
+    let site = {
+        title: 'a neat site',
+        description: 'a rather neat site',
         baseUrl: 'https://t3hmun.github.io',
         nav: [
             {url: 'index.html', text: 'Home'},
             {url: 'info.html', text: 'Info'},
             {url: 'archive.html', text: 'Archive'}
         ],
-        postDir: 'posts',
-        pageDir: 'pages',
-        cssDir: 'css',
-        jsDir: 'js'
+        testDir: './offline-test',
+        outputDir: {
+            dir: './pages',
+            dirs: {
+                content: './',
+                js: 'js',
+                css: 'css',
+                posts: 'posts'
+            }
+        },
+        inputDir: {
+            dir: './',
+            dirs: {
+                posts: 'posts',
+                templates: 'templates',
+                css: 'css',
+                js: 'js',
+                content: 'content'
+            }
+        }
     };
 
-    if (process.argv.length > 2) {
-        console.log('Config:');
-        if (process.argv.find((e) => e == 'debug')) {
-            debug = true;
-            debug && console.log(' Debug-mode on.');
-        }
-        if (process.argv.find((e) => e == 'test')) {
-            test = true;
-            // Fully resolved path allows testing without server.
-            site.baseUrl = 'file:///' + path.resolve('./test');
-            outputDir = path.resolve('./test');
-            debug && console.log('test outputDir=' + outputDir);
-            console.log(' Test mode activated.');
-        }
-        console.log('');
-    }
+    return JSON.stringify(site, null, 4);
+}
 
-    return [site, outputDir, debug, test];
+/**
+ *
+ * @return {Promise.<[]>} - [site, debug, test]
+ */
+function loadConfig() {
+    return t3hfs.read(CONFIG_FILE_NAME).then((conf) => {
+        let site;
+        try {
+            site = JSON.parse(conf);
+        } catch (err) {
+            errorAndExit(err);
+        }
+        return site;
+    }).catch((err) => {
+        errorAndExit(err)
+    }).then((site) => {
+        let debug = false;
+        let outputDir = site.outputDir;
+        let test = false;
+
+        if (process.argv.length > 2) {
+            console.log('Config:');
+            if (process.argv.find((e) => e == 'debug')) {
+                debug = true;
+                debug && console.log(' Debug-mode on.');
+            }
+            if (process.argv.find((e) => e == 'test')) {
+                test = true;
+                // Fully resolved path allows testing without server.
+                site.baseUrl = 'file:///' + path.resolve('./test');
+                outputDir = path.resolve('./test');
+                debug && console.log('test outputDir=' + outputDir);
+                console.log(' Test mode activated.');
+            }
+            console.log('');
+        }
+
+        return [site, debug, test];
+    });
 }
 
 /**
  * Fires a load of promises that result in a static site.
- * @param {{}} site - site config, used by pug templates.
- * @param {string} outputDir - Where the complete site will be written.
- * @param {boolean} debug - True to enable debug output.
- * @param {boolean} test - True to avoid minifying.
  * @returns {void}
  */
-function publish(site, outputDir, debug, test) {
-    // TODO: Move remaining string literals from here to configure().
-    let cssOutputDir = path.join(outputDir, site.cssDir);
-    let postOutputDir = path.join(outputDir, site.postDir); // Must be relative for url generation.
-    let jsOutputDir = path.join(outputDir, site.jsDir);
+function publish() {
+    loadConfig().then((conf) => {
+        let [site, debug, test] = conf;
+        // TODO: Move remaining string literals from here to configure().
+        let outputDir = site.outputDir;
+        let cssOutputDir = path.join(outputDir, site.cssDir);
+        let postOutputDir = path.join(outputDir, site.postDir); // Must be relative for url generation.
+        let jsOutputDir = path.join(outputDir, site.jsDir);
 
-    // Read files from disk and perform any processing that doesn't rely on other files.
-    let templatesLoaded = loadTemplates('./templates', debug);
-    let postsLoaded = loadPosts('./posts', postOutputDir, debug);
-    let lightCssRendered = renderLessToCss('./css/light.less', !test, debug);
-    let darkCssRendered = renderLessToCss('./css/dark.less', !test, debug);
-    let jsLoaded = loadJS('./js', debug);
+        // Read files from disk and perform any processing that doesn't rely on other files.
+        let templatesLoaded = loadTemplates('./templates', debug);
+        let postsLoaded = loadPosts('./posts', postOutputDir, debug);
+        let lightCssRendered = renderLessToCss('./css/light.less', !test, debug);
+        let darkCssRendered = renderLessToCss('./css/dark.less', !test, debug);
+        let jsLoaded = loadJS('./js', debug);
 
-    // Create output directories - don't try doing this in parallel, they both try to create the test dir.
-    let createDirs = effess.ensureDirCreated(postOutputDir).then(() => {
-        return effess.ensureDirCreated(cssOutputDir);
-    }).then(() => {
-        return effess.ensureDirCreated(jsOutputDir);
-    }).catch((err) => {
-        errorAndExit(err);
-    });
+        // Create output directories - don't try doing this in parallel, they both try to create the test dir.
+        let createDirs = t3hfs.ensureDirCreated(postOutputDir).then(() => {
+            return t3hfs.ensureDirCreated(cssOutputDir);
+        }).then(() => {
+            return t3hfs.ensureDirCreated(jsOutputDir);
+        }).catch((err) => {
+            errorAndExit(err);
+        });
 
-    // Creation tasks that rely on previously loaded files.
-    let postTemplateApplied = Promise.all([postsLoaded, templatesLoaded]).then((tasksResults) => {
-        return applyPostTemplates(...tasksResults, site, test, debug);
-    });
+        // Creation tasks that rely on previously loaded files.
+        let postTemplateApplied = Promise.all([postsLoaded, templatesLoaded]).then((tasksResults) => {
+            return applyPostTemplates(...tasksResults, site, test, debug);
+        });
 
-    // Render and write pages - they require posts for generating the indexes.
-    Promise.all([createDirs, postsLoaded]).then((results) => {
-        let posts = results[1];
-        posts.dir = site.postDir;
-        return renderPugPages('./pages', site, posts, test, debug).then((pages) => {
-            return effess.writeMany(pages, (page) => {
-                return [outputDir, page.fileName, page.html];
+        // Render and write pages - they require posts for generating the indexes.
+        Promise.all([createDirs, postsLoaded]).then((results) => {
+            let posts = results[1];
+            posts.dir = site.postDir;
+            return renderPugPages('./pages', site, posts, test, debug).then((pages) => {
+                return t3hfs.writeMany(pages, (page) => {
+                    return [outputDir, page.fileName, page.html];
+                });
             });
+        }).catch((err) => {
+            errorAndExit(err);
         });
-    }).catch((err) => {
-        errorAndExit(err);
-    });
 
-    // Write files.
-    let writePosts = Promise.all([postTemplateApplied, createDirs]).then((taskResults) => {
-        let [posts] = taskResults;
-        return effess.writeMany(posts, (post) => {
-            return [postOutputDir, post.urlName, post.html];
+        // Write files.
+        let writePosts = Promise.all([postTemplateApplied, createDirs]).then((taskResults) => {
+            let [posts] = taskResults;
+            return t3hfs.writeMany(posts, (post) => {
+                return [postOutputDir, post.urlName, post.html];
+            });
+        }).catch((err) => {
+            errorAndExit(err);
         });
-    }).catch((err) => {
-        errorAndExit(err);
-    });
 
-    let writeCSS = Promise.all([lightCssRendered, darkCssRendered, createDirs]).then((results) => {
-        let [light, dark] = results;
-        let lightPromise = effess.write(cssOutputDir, 'light.css', light.css);
-        let darkPromise = effess.write(cssOutputDir, 'dark.css', dark.css);
-        return Promise.all([lightPromise, darkPromise]);
-    }).catch((err) => {
-        errorAndExit(err);
-    });
-
-    let writeJS = Promise.all([createDirs, jsLoaded]).then((results) => {
-        let result = results[1];
-        return effess.writeMany(result, (file) => {
-            return [jsOutputDir, file.name, file.data];
+        let writeCSS = Promise.all([lightCssRendered, darkCssRendered, createDirs]).then((results) => {
+            let [light, dark] = results;
+            let lightPromise = t3hfs.write(cssOutputDir, 'light.css', light.css);
+            let darkPromise = t3hfs.write(cssOutputDir, 'dark.css', dark.css);
+            return Promise.all([lightPromise, darkPromise]);
+        }).catch((err) => {
+            errorAndExit(err);
         });
-    }).catch((err) => {
-        errorAndExit(err)
-    });
 
-    Promise.all([writePosts, writeCSS, writeJS]).then(() => {
-        console.log('Publish complete.');
+        let writeJS = Promise.all([createDirs, jsLoaded]).then((results) => {
+            let result = results[1];
+            return t3hfs.writeMany(result, (file) => {
+                return [jsOutputDir, file.name, file.data];
+            });
+        }).catch((err) => {
+            errorAndExit(err)
+        });
+
+        Promise.all([writePosts, writeCSS, writeJS]).then(() => {
+            console.log('Publish complete.');
+        });
     });
 }
 
@@ -142,9 +181,9 @@ function publish(site, outputDir, debug, test) {
  */
 function loadJS(jsDir, debug) {
     // This could have a minify step but I don't have enough js to bother.
-    let files = effess.readFilesInDir(jsDir);
-    if(debug){
-        files.then((result)=>{
+    let files = t3hfs.readFilesInDir(jsDir);
+    if (debug) {
+        files.then((result) => {
             console.log(`loaded ${result.length} js files`);
         });
     }
@@ -162,7 +201,7 @@ function loadJS(jsDir, debug) {
  */
 function renderPugPages(pageDir, site, posts, test, debug) {
     debug && console.log('Rendering pug pages ...');
-    return effess.readFilesInDir(pageDir, (fileName) => fileName.endsWith('.pug')).then((files) => {
+    return t3hfs.readFilesInDir(pageDir, (fileName) => fileName.endsWith('.pug')).then((files) => {
         let options = {
             site: site,
             posts: posts,
@@ -228,7 +267,7 @@ function applyPostTemplates(posts, templates, site, test, debug) {
  */
 function renderLessToCss(filePath, compress, debug) {
     debug && console.log('Rendering CSS from LESS...');
-    return effess.read(filePath).then((data) => {
+    return t3hfs.read(filePath).then((data) => {
         let lessOptions = {
             filename: path.resolve(filePath),
             paths: path.parse(filePath).dir,
@@ -248,7 +287,7 @@ function renderLessToCss(filePath, compress, debug) {
  */
 function errorAndExit(err) {
     console.log(err);
-    process.exit();
+    process.exit(1);
 }
 
 
@@ -261,7 +300,7 @@ function errorAndExit(err) {
 function loadTemplates(dir, debug) {
     debug && console.log('Loading templates ...');
     let filter = (fileName) => fileName.endsWith('.pug');
-    return effess.readFilesInDir(dir, filter).then((files) => {
+    return t3hfs.readFilesInDir(dir, filter).then((files) => {
         let templates = [];
         try {
             files.forEach((file) => {
@@ -291,7 +330,7 @@ function loadTemplates(dir, debug) {
 function loadPosts(dir, outputDir, debug) {
     debug && console.log('Loading posts ...');
     let filter = (fileName) => fileName.endsWith('.md');
-    return effess.readFilesInDir(dir, filter).then((files) => {
+    return t3hfs.readFilesInDir(dir, filter).then((files) => {
         let posts = [];
         files.forEach((file) => {
             let mdContent;
