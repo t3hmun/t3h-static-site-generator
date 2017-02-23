@@ -100,26 +100,16 @@ function publish() {
     loadConfig().then((conf) => {
         let [site, debug, test] = conf;
         // TODO: Move remaining string literals from here to configure().
-        let outputDir = site.outputDir;
-        let cssOutputDir = path.join(outputDir, site.cssDir);
-        let postOutputDir = path.join(outputDir, site.postDir); // Must be relative for url generation.
-        let jsOutputDir = path.join(outputDir, site.jsDir);
+
+        let dirsCreated = resolveAndCreateDirs(site.inputDir).then(
+            resolveAndCreateDirs(site.outputDir));
 
         // Read files from disk and perform any processing that doesn't rely on other files.
-        let templatesLoaded = loadTemplates('./templates', debug);
-        let postsLoaded = loadPosts('./posts', postOutputDir, debug);
-        let lightCssRendered = renderLessToCss('./css/light.less', !test, debug);
-        let darkCssRendered = renderLessToCss('./css/dark.less', !test, debug);
-        let jsLoaded = loadJS('./js', debug);
-
-        // Create output directories - don't try doing this in parallel, they both try to create the test dir.
-        let createDirs = t3hfs.ensureDirCreated(postOutputDir).then(() => {
-            return t3hfs.ensureDirCreated(cssOutputDir);
-        }).then(() => {
-            return t3hfs.ensureDirCreated(jsOutputDir);
-        }).catch((err) => {
-            errorAndExit(err);
-        });
+        let templatesLoaded = dirsCreated.then(loadTemplates('./templates', debug));
+        let postsLoaded = dirsCreated.then(loadPosts('./posts', postOutputDir, debug));
+        let lightCssRendered = dirsCreated.then(renderLessToCss('./css/light.less', !test, debug));
+        let darkCssRendered = dirsCreated.then(renderLessToCss('./css/dark.less', !test, debug));
+        let jsLoaded = dirsCreated.then(loadJS('./js', debug));
 
         // Creation tasks that rely on previously loaded files.
         let postTemplateApplied = Promise.all([postsLoaded, templatesLoaded]).then((tasksResults) => {
@@ -170,6 +160,36 @@ function publish() {
         Promise.all([writePosts, writeCSS, writeJS]).then(() => {
             console.log('Publish complete.');
         });
+    });
+}
+
+/**
+ *
+ * @param dirObject
+ * @param debug - debug output flag.
+ * @return {Promise.<>}
+ */
+function resolveAndCreateDirs(dirObject, debug) {
+
+    // Create dirs one after another.
+    // Do not do in parallel otherwise super-dir creation can collide and fail.
+    debug && console.log(dirObject);
+    let chain = Promise.resolve();
+    let dirs = dirObject.dirs;
+    Object.keys(dirs).forEach((key) => {
+        let fullDir = path.join(dirObject.dir, dirs[key]);
+        dirs[key] = fullDir;
+        chain = chain.then(() => {
+            return t3hfs.ensureDirCreated(fullDir).then(() => {
+                debug && console.log('created ' + fullDir)
+            }).catch((err) => {
+                errorAndExit(err);
+            })
+        });
+    });
+
+    return chain.then(() => {
+        debug && console.log(dirObject)
     });
 }
 
