@@ -135,7 +135,7 @@ function publish() {
         });
 
         // Write files.
-        let writePosts = Promise.all([postTemplateApplied, createDirs]).then((taskResults) => {
+        let writePosts = Promise.all([postTemplateApplied, dirsCreated]).then((taskResults) => {
             let [posts] = taskResults;
             let writeArr = Array.from(posts, (item) => {
                 return [outDirs.posts, item.urlName, item.html]
@@ -145,20 +145,20 @@ function publish() {
             errorAndExit(err);
         });
 
-        let writeCSS = Promise.all([lightCssRendered, darkCssRendered, createDirs]).then((results) => {
+        // TODO: Issue #13
+        let writeCSS = Promise.all([lightCssRendered, darkCssRendered, dirsCreated]).then((results) => {
             let [light, dark] = results;
-            let lightPromise = t3hfs.write(cssOutputDir, 'light.css', light.css);
-            let darkPromise = t3hfs.write(cssOutputDir, 'dark.css', dark.css);
+            let lightPromise = t3hfs.write(outDirs.css, 'light.css', light.css);
+            let darkPromise = t3hfs.write(outDirs.css, 'dark.css', dark.css);
             return Promise.all([lightPromise, darkPromise]);
         }).catch((err) => {
             errorAndExit(err);
         });
 
-        let writeJS = Promise.all([createDirs, jsLoaded]).then((results) => {
-            let result = results[1];
-            return t3hfs.writeMany(result, (file) => {
-                return [jsOutputDir, file.name, file.data];
-            });
+        let writeJS = Promise.all([dirsCreated, jsLoaded]).then((results) => {
+            let jsFiles = results[1];
+            let writeArr = Array.from(jsFiles, (item)=>{return [outDirs.js, item.name, item.data]});
+            return t3hfs.writeMany(writeArr);
         }).catch((err) => {
             errorAndExit(err)
         });
