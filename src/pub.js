@@ -99,17 +99,21 @@ function loadConfig() {
 function publish() {
     loadConfig().then((conf) => {
         let [site, debug, test] = conf;
-        // TODO: Move remaining string literals from here to configure().
 
+        // vars with names in past-tense are promises.
         let dirsCreated = resolveAndCreateDirs(site.inputDir).then(
             resolveAndCreateDirs(site.outputDir));
 
+        let outDirs = site.outputDir.dirs;
+        let inDirs = site.inputDir.dirs;
+
         // Read files from disk and perform any processing that doesn't rely on other files.
-        let templatesLoaded = dirsCreated.then(loadTemplates('./templates', debug));
-        let postsLoaded = dirsCreated.then(loadPosts('./posts', postOutputDir, debug));
+        let templatesLoaded = dirsCreated.then(loadTemplates(inDirs.templates, debug));
+        let postsLoaded = dirsCreated.then(loadPosts(inDirs.posts, outDirs.posts, debug));
+        // TODO: Issue #13 autodetect the correct less files.
         let lightCssRendered = dirsCreated.then(renderLessToCss('./css/light.less', !test, debug));
         let darkCssRendered = dirsCreated.then(renderLessToCss('./css/dark.less', !test, debug));
-        let jsLoaded = dirsCreated.then(loadJS('./js', debug));
+        let jsLoaded = dirsCreated.then(loadJS(inDirs.js, debug));
 
         // Creation tasks that rely on previously loaded files.
         let postTemplateApplied = Promise.all([postsLoaded, templatesLoaded]).then((tasksResults) => {
@@ -117,13 +121,14 @@ function publish() {
         });
 
         // Render and write pages - they require posts for generating the indexes.
-        Promise.all([createDirs, postsLoaded]).then((results) => {
+        Promise.all([dirsCreated, postsLoaded]).then((results) => {
             let posts = results[1];
-            posts.dir = site.postDir;
-            return renderPugPages('./pages', site, posts, test, debug).then((pages) => {
-                return t3hfs.writeMany(pages, (page) => {
-                    return [outputDir, page.fileName, page.html];
+            posts.dir = outDirs.posts;
+            return renderPugPages(inDirs.content, site, posts, test, debug).then((pages) => {
+                let writeArr = Array.from(pages, (item) => {
+                    return [outDirs.content, item.fileName, item.html]
                 });
+                return t3hfs.writeMany(writeArr);
             });
         }).catch((err) => {
             errorAndExit(err);
@@ -132,9 +137,10 @@ function publish() {
         // Write files.
         let writePosts = Promise.all([postTemplateApplied, createDirs]).then((taskResults) => {
             let [posts] = taskResults;
-            return t3hfs.writeMany(posts, (post) => {
-                return [postOutputDir, post.urlName, post.html];
+            let writeArr = Array.from(posts, (item) => {
+                return [outDirs.posts, item.urlName, item.html]
             });
+            return t3hfs.writeMany(writeArr);
         }).catch((err) => {
             errorAndExit(err);
         });
@@ -233,10 +239,11 @@ function renderPugPages(pageDir, site, posts, test, debug) {
             renders.push(new Promise((resolve) => {
                 options.filename = file.path;
                 let html = pug.render(file.data, options);
-                let page = {};
                 let info = path.parse(file.path);
-                page.fileName = info.name + '.html';
-                page.html = html;
+                let page = {
+                    filename: info.name + 'html',
+                    html: html
+                };
                 resolve(page);
             }));
         });
