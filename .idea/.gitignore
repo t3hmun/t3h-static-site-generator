@@ -9,4 +9,6 @@
 !t3h-static-site-generator.iml
 !.gitignore
 !inspectionProfiles/
+!inspectionProfiles/*
 !jsLibraryMappings.xml
+!misc.xml
