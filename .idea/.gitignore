@@ -1,0 +1,12 @@
+# Minial set of files for working Webstorm / IDEA project.
+
+# Ingore everything.
+*
+
+# Essential project files.
+!modules.xml
+!vcs.xml
+!t3h-static-site-generator.iml
+!.gitignore
+!inspectionProfiles/
+!jsLibraryMappings.xml

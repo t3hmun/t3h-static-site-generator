@@ -1,0 +1,8 @@
+extends universal.pug
+//- The template for all posts, simply inserts the H1 title header before the content.
+block content
+    article
+        header
+            h1= page.title
+            div(class='header-date-footer') !{page.date.toDateString()}
+        | !{content}

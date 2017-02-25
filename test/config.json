@@ -1,0 +1,39 @@
+{
+    "title": "a neat site",
+    "description": "a rather neat site",
+    "baseUrl": "https://t3hmun.github.io",
+    "nav": [
+        {
+            "url": "index.html",
+            "text": "Home"
+        },
+        {
+            "url": "info.html",
+            "text": "Info"
+        },
+        {
+            "url": "archive.html",
+            "text": "Archive"
+        }
+    ],
+    "testDir": "./preview",
+    "outputDir": {
+        "dir": "./pages",
+        "dirs": {
+            "content": "./",
+            "js": "js",
+            "css": "css",
+            "posts": "posts"
+        }
+    },
+    "inputDir": {
+        "dir": "./input/",
+        "dirs": {
+            "posts": "posts",
+            "templates": "templates",
+            "css": "css",
+            "js": "js",
+            "content": "content"
+        }
+    }
+}
