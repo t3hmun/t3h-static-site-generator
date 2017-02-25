@@ -81,7 +81,7 @@ function loadConfig() {
                 // Fully resolved path allows testing without server.
                 site.baseUrl = 'file:///' + path.resolve(site.testDir);
                 // Replace outputDir with testDir.
-                site.outputDir.dir = path.resolve(site.testDir);
+                site.outputDir.dir = site.testDir;
 
                 debug && console.log('test outputDir=' + site.outputDir.dir);
                 console.log(' Test mode activated.');
@@ -102,19 +102,40 @@ function publish() {
         let [site, debug, test] = conf;
 
         // vars with names in past-tense are promises.
-        let dirsCreated = resolveAndCreateDirs(site.inputDir).then(
-            resolveAndCreateDirs(site.outputDir));
+        let dirsCreated = resolveAndCreateDirs(site.inputDir, debug).then(
+            resolveAndCreateDirs(site.outputDir, debug));
 
-        let outDirs = site.outputDir.dirs;
-        let inDirs = site.inputDir.dirs;
+        // # A note on output dirs
+        // Output dirs have 2 purposes, define where to write the files, and help name links in pages.
+        // Writing: outputDir + outputDir.dirs[x] + filename
+        // Linking: baseUrl + outputDir.dirs[x] + filename
+        // Relative linking:  outputDir.dirs[x] + filename
+        // The outputDir is just the location on the dev computer to put the files.
+        // The outputDir.dirs[x] is the location on the server after the baseUrl.
+        // Therefore outputDir.full[x] is for writing files, the outputDir.dirs[x] is for link generation.
+        // For input dirs only the full dirs are useful.
+
+        let writeOutDirs = site.outputDir.full;
+        let linkOutDirs = site.outputDir.dirs;
+        let inDirs = site.inputDir.full;
 
         // Read files from disk and perform any processing that doesn't rely on other files.
-        let templatesLoaded = dirsCreated.then(loadTemplates(inDirs.templates, debug));
-        let postsLoaded = dirsCreated.then(loadPosts(inDirs.posts, outDirs.posts, debug));
+        let templatesLoaded = dirsCreated.then(() => {
+            return loadTemplates(inDirs.templates, debug)
+        });
+        let postsLoaded = dirsCreated.then(() => {
+            return loadPosts(inDirs.posts, linkOutDirs.posts, debug)
+        });
         // TODO: Issue #13 autodetect the correct less files.
-        let lightCssRendered = dirsCreated.then(renderLessToCss('./css/light.less', !test, debug));
-        let darkCssRendered = dirsCreated.then(renderLessToCss('./css/dark.less', !test, debug));
-        let jsLoaded = dirsCreated.then(loadJS(inDirs.js, debug));
+        let lightCssRendered = dirsCreated.then(() => {
+            return renderLessToCss('./css/light.less', !test, debug)
+        });
+        let darkCssRendered = dirsCreated.then(() => {
+            return renderLessToCss('./css/dark.less', !test, debug)
+        });
+        let jsLoaded = dirsCreated.then(() => {
+            return loadJS(inDirs.js, debug)
+        });
 
         // Creation tasks that rely on previously loaded files.
         let postTemplateApplied = Promise.all([postsLoaded, templatesLoaded]).then((tasksResults) => {
@@ -124,11 +145,13 @@ function publish() {
         // Render and write pages - they require posts for generating the indexes.
         Promise.all([dirsCreated, postsLoaded]).then((results) => {
             let posts = results[1];
-            posts.dir = outDirs.posts;
+            // This is for generating indexes in the pages.
+            posts.dir = linkOutDirs.posts;
             return renderPugPages(inDirs.content, site, posts, test, debug).then((pages) => {
                 let writeArr = Array.from(pages, (item) => {
-                    return [outDirs.content, item.fileName, item.html]
+                    return [writeOutDirs.content, item.fileName, item.html]
                 });
+
                 return t3hfs.writeMany(writeArr);
             });
         }).catch((err) => {
@@ -139,7 +162,7 @@ function publish() {
         let writePosts = Promise.all([postTemplateApplied, dirsCreated]).then((taskResults) => {
             let [posts] = taskResults;
             let writeArr = Array.from(posts, (item) => {
-                return [outDirs.posts, item.urlName, item.html]
+                return [writeOutDirs.posts, item.urlName, item.html]
             });
             return t3hfs.writeMany(writeArr);
         }).catch((err) => {
@@ -149,8 +172,8 @@ function publish() {
         // TODO: Issue #13
         let writeCSS = Promise.all([lightCssRendered, darkCssRendered, dirsCreated]).then((results) => {
             let [light, dark] = results;
-            let lightPromise = t3hfs.write(outDirs.css, 'light.css', light.css);
-            let darkPromise = t3hfs.write(outDirs.css, 'dark.css', dark.css);
+            let lightPromise = t3hfs.write(writeOutDirs.css, 'light.css', light.css);
+            let darkPromise = t3hfs.write(writeOutDirs.css, 'dark.css', dark.css);
             return Promise.all([lightPromise, darkPromise]);
         }).catch((err) => {
             errorAndExit(err);
@@ -159,7 +182,7 @@ function publish() {
         let writeJS = Promise.all([dirsCreated, jsLoaded]).then((results) => {
             let jsFiles = results[1];
             let writeArr = Array.from(jsFiles, (item) => {
-                return [outDirs.js, item.name, item.data]
+                return [writeOutDirs.js, item.name, item.data]
             });
             return t3hfs.writeMany(writeArr);
         }).catch((err) => {
@@ -185,12 +208,13 @@ function resolveAndCreateDirs(dirObject, debug) {
     debug && console.log(dirObject);
     let chain = Promise.resolve();
     let dirs = dirObject.dirs;
+    let full = dirObject.full = {};
     Object.keys(dirs).forEach((key) => {
         let fullDir = path.join(dirObject.dir, dirs[key]);
-        dirs[key] = fullDir;
+        full[key] = fullDir;
         chain = chain.then(() => {
             return t3hfs.ensureDirCreated(fullDir).then(() => {
-                debug && console.log('created ' + fullDir)
+                debug && console.log('created ' + key + ': ' + fullDir);
             }).catch((err) => {
                 errorAndExit(err);
             })
@@ -244,7 +268,7 @@ function renderPugPages(pageDir, site, posts, test, debug) {
                 let html = pug.render(file.data, options);
                 let info = path.parse(file.path);
                 let page = {
-                    filename: info.name + 'html',
+                    fileName: info.name + '.html',
                     html: html
                 };
                 resolve(page);
@@ -352,12 +376,12 @@ function loadTemplates(dir, debug) {
 /**
  * Loads posts from dir, reads info and converts md.
  * @param {string} dir - Dir to load posts from, not recursive.
- * @param {string} outputDir - Needed for generating the url.
+ * @param {string} linkOutputDir - Needed for generating the url.
  * @param {boolean} debug - Enable debug output (default false).
  * @return {Promise.<{}[]>} - List of {html, filePath, fileName, title, date, url, urlName}, the urls have spaces
  * replaced.
  */
-function loadPosts(dir, outputDir, debug) {
+function loadPosts(dir, linkOutputDir, debug) {
     debug && console.log('Loading posts ...');
     let filter = (fileName) => fileName.endsWith('.md');
     return t3hfs.readFilesInDir(dir, filter).then((files) => {
@@ -380,7 +404,7 @@ function loadPosts(dir, outputDir, debug) {
             post.html = md.convert(mdContent);
 
             setPostDateTitleInfo(post, debug);
-            post.url = path.join(outputDir, post.urlName);
+            post.url = path.join(linkOutputDir, post.urlName);
             posts.push(post);
         });
         debug && console.log('... posts loaded.');
