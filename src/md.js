@@ -45,21 +45,22 @@ module.exports.convert = function (data) {
 
 module.exports.extractFrontmatter = splitJsonAndFile;
 
+
 /**
  * Splits the Json front-matter from the rest of the file, returns both parts.
- * @param fileContents - The contents of a file with Json front-matter.
- * @returns {{}} Separated file and json {file, json}.
+ * @param {string} fileContents - The contents of a file with Json front-matter.
+ * @return {{file: string, json}} Separated file and json {file, json}.
  */
 function splitJsonAndFile(fileContents) {
-    var prev = '';
-    var open = 0;
-    var close = 0;
-    var end;
+    let prev = '';
+    let open = 0;
+    let close = 0;
+    let end;
 
-    for (var i = 0, len = fileContents.length; i < len; i++) {
+    for (let i = 0, len = fileContents.length; i < len; i++) {
         let current = fileContents[i];
-        if (current == "{" && prev != '\\') open++;
-        if (current == "}" && prev != '\\') close++;
+        if (current == '{' && prev != '\\') open++;
+        if (current == '}' && prev != '\\') close++;
         if (open == close) {
             end = i;
             break;
@@ -73,5 +74,5 @@ function splitJsonAndFile(fileContents) {
     return {
         file: data,
         json: JSON.parse(front)
-    }
+    };
 }

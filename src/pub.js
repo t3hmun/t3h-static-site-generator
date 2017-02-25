@@ -35,8 +35,10 @@ module.exports.generateDefaultConfig = generateDefaultConfig;
 module.exports.publish = publish;
 module.exports.CONFIG_FILE_NAME = CONFIG_FILE_NAME;
 
+
 /**
  * Generates a default template config.
+ * WebStorm/Intellij pulls the template for the site object type from here.. somehow.
  * @return {string} - JSON of the site config.
  */
 function generateDefaultConfig() {
@@ -75,7 +77,7 @@ function generateDefaultConfig() {
 }
 
 /**
- *
+ * Loads the config from a JSON file and modifies it based on process args.
  * @return {Promise.<[]>} - [site, debug, test]
  */
 function loadConfig() {
@@ -88,7 +90,7 @@ function loadConfig() {
         }
         return site;
     }).catch((err) => {
-        errorAndExit(err)
+        errorAndExit(err);
     }).then((site) => {
         let debug = false;
         let test = false;
@@ -128,7 +130,7 @@ function publish() {
         return resolveAndCreateDirs(site.inputDir, debug);
     }).then(() => {
         // Creating dirs must not be done in parallel because they may share a common base dir.
-        return resolveAndCreateDirs(site.outputDir, debug)
+        return resolveAndCreateDirs(site.outputDir, debug);
     }).then(() => {
         // Some things within this block may occur in parallel.
         // Everything is ordered by chaining onto the promises that the step relies on.
@@ -166,7 +168,7 @@ function publish() {
             posts.dir = linkOutDirs.posts;
             return renderPugPages(inDirs.content, site, posts, test, debug).then((pages) => {
                 let writeArr = Array.from(pages, (item) => {
-                    return [writeOutDirs.content, item.fileName, item.html]
+                    return [writeOutDirs.content, item.fileName, item.html];
                 });
 
                 return t3hfs.writeMany(writeArr);
@@ -178,7 +180,7 @@ function publish() {
         // Write files.
         let writePosts = postTemplateApplied.then((posts) => {
             let writeArr = Array.from(posts, (item) => {
-                return [writeOutDirs.posts, item.urlName, item.html]
+                return [writeOutDirs.posts, item.urlName, item.html];
             });
             return t3hfs.writeMany(writeArr);
         }).catch((err) => {
@@ -197,11 +199,11 @@ function publish() {
 
         let writeJS = jsLoaded.then((jsFiles) => {
             let writeArr = Array.from(jsFiles, (item) => {
-                return [writeOutDirs.js, item.name, item.data]
+                return [writeOutDirs.js, item.name, item.data];
             });
             return t3hfs.writeMany(writeArr);
         }).catch((err) => {
-            errorAndExit(err)
+            errorAndExit(err);
         });
 
         Promise.all([writePosts, writeCSS, writeJS]).then(() => {
@@ -211,16 +213,23 @@ function publish() {
 }
 
 /**
+ * @typedef {Object} DirObject
+ * @property {string} dir - The dir containing the dirs in the dirs property.
+ * @property {{}} dirs - The unresolved dirs properties from the config file.
+ * @property {{}} [full] - Copy of dirs modified to have dir joined to the front of each value.
+ */
+
+/**
  *
- * @param dirObject
- * @param debug - debug output flag.
- * @return {Promise.<>}
+ * @param {DirObject} dirObject - Object representing dir and sub-dirs.
+ * @param {boolean} debug - debug output flag.
+ * @return {Promise} - Promise on completion of making and resolving dirs.
  */
 function resolveAndCreateDirs(dirObject, debug) {
 
     // Create dirs one after another.
     // Do not do in parallel otherwise super-dir creation can collide and fail.
-    debug && console.log("Start resolve:");
+    debug && console.log('Start resolve:');
     debug && console.log(dirObject);
     let chain = Promise.resolve();
     let dirs = dirObject.dirs;
@@ -233,19 +242,19 @@ function resolveAndCreateDirs(dirObject, debug) {
                 debug && console.log('created ' + key + ': ' + fullDir);
             }).catch((err) => {
                 errorAndExit(err);
-            })
+            });
         });
     });
 
     return chain.then(() => {
-        debug && console.log("End resolve:");
+        debug && console.log('End resolve:');
         debug && console.log(dirObject);
     });
 }
 
 /**
  * Read all the files from the JS dir. Doesn't do anything else yet.
- * @param jsDir - Directory containing the js files.
+ * @param {string} jsDir - Directory containing the js files.
  * @param {boolean} debug - True enables debug mode.
  * @return {Promise<{}[]>} - List of {name, path, dir, data} objects.
  */
@@ -282,7 +291,7 @@ function renderPugPages(pageDir, site, posts, test, debug) {
         files.forEach((file) => {
             renders.push(new Promise((resolve) => {
                 options.filename = file.path;
-                let html = pug.render(file.data, options);
+                let html = pug.render(file.data, options, undefined);
                 let info = path.parse(file.path);
                 let page = {
                     fileName: info.name + '.html',
@@ -375,7 +384,12 @@ function loadTemplates(dir, debug) {
         let templates = [];
         try {
             files.forEach((file) => {
-                let options = {filename: file.path}; // Only needed to add detail to errors.
+                let options = {
+                    filename: file.path,
+                    compileDebug: debug
+                };
+                // The inspection here is broken, Options type is undefined.
+                //noinspection JSCheckFunctionSignatures
                 let template = pug.compile(file.data, options);
                 templates.push({
                     name: path.parse(file.path).name, //removes ext
@@ -391,11 +405,32 @@ function loadTemplates(dir, debug) {
 }
 
 /**
+ * @typedef {Object} PathParse - path.parse(file) output.
+ * @property {string} root
+ * @property {string} dir
+ * @property {string} base
+ * @property {string} ext
+ * @property {string} name
+ */
+
+/**
+ * @typedef {Object} Post
+ * @property {string} html - File contents.
+ * @property {string} filePath
+ * @property {string} fileName
+ * @property {string} title
+ * @property {Date} date
+ * @property {string} url
+ * @property {string} urlName
+ * @property {PathParse} file
+ */
+
+/**
  * Loads posts from dir, reads info and converts md.
  * @param {string} dir - Dir to load posts from, not recursive.
  * @param {string} linkOutputDir - Needed for generating the url.
  * @param {boolean} debug - Enable debug output (default false).
- * @return {Promise.<{}[]>} - List of {html, filePath, fileName, title, date, url, urlName}, the urls have spaces
+ * @return {Promise.<{Post}[]>} - List of {html, filePath, fileName, title, date, url, urlName}, the urls have spaces
  * replaced.
  */
 function loadPosts(dir, linkOutputDir, debug) {
@@ -431,7 +466,7 @@ function loadPosts(dir, linkOutputDir, debug) {
 
 /**
  * Extracts title and date from filename, makes filename url friendly.
- * @param {{}} post - The post that will have properties added.
+ * @param {Post} post - The post that will have properties added.
  * @param {boolean} debug - Debug mode on, activates verbose output.
  * @returns {void}
  */

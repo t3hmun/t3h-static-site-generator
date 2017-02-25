@@ -8,3 +8,5 @@
 !vcs.xml
 !t3h-static-site-generator.iml
 !.gitignore
+!inspectionProfiles/
+!jsLibraryMappings.xml

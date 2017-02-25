@@ -33,6 +33,7 @@ go();
 
 /**
  * Creates default config if missing, otherwise reads config and creates dirs.
+ * @returns {undefined}
  */
 function go() {
     let debug = false;
@@ -49,11 +50,11 @@ function go() {
         try {
             site = JSON.parse(conf);
         } catch (err) {
-            logAndQuit(err)
+            logAndQuit(err);
         }
         debug && console.log(site);
 
-        createDirs(site, debug)
+        createDirs(site, debug);
 
     }).catch((err) => {
         if (err.code == 'ENOENT') {
@@ -61,7 +62,7 @@ function go() {
             t3hfs.write('./', CONFIG_FILE_NAME, conf).then(() => {
                 console.log('Default config written. Please modify and then run createDirs again.');
             }).catch((err) => {
-                logAndQuit(err)
+                logAndQuit(err);
             });
         } else {
             logAndQuit(err);
@@ -71,7 +72,8 @@ function go() {
 
 /**
  * Logs an error and kills the node process.
- * @param err - The error.
+ * @param {Error} err - The error.
+ * @returns {undefined}
  */
 function logAndQuit(err) {
     console.log(err);
@@ -80,8 +82,9 @@ function logAndQuit(err) {
 
 /**
  * Creates the folders in the config.
- * @param site - Site config, the parsed config.json.
- * @param debug - Debug output setting.
+ * @param {{}} site - Site config, the parsed config.json.
+ * @param {boolean} debug - Debug output setting.
+ * @returns {undefined}
  */
 function createDirs(site, debug) {
 
@@ -93,10 +96,10 @@ function createDirs(site, debug) {
         let fullDir = path.join(site.inputDir.dir, dirs[key]);
         chain = chain.then(() => {
             return t3hfs.ensureDirCreated(fullDir).then(() => {
-                debug && console.log('created ' + fullDir)
+                debug && console.log('created ' + fullDir);
             }).catch((err) => {
-                logAndQuit(err)
-            })
+                logAndQuit(err);
+            });
         });
     });
 }
