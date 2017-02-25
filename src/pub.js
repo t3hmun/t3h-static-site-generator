@@ -26,7 +26,7 @@ function generateDefaultConfig() {
             {url: 'info.html', text: 'Info'},
             {url: 'archive.html', text: 'Archive'}
         ],
-        testDir: './offline-test',
+        testDir: './preview',
         outputDir: {
             dir: './pages',
             dirs: {
@@ -37,7 +37,7 @@ function generateDefaultConfig() {
             }
         },
         inputDir: {
-            dir: './',
+            dir: './input',
             dirs: {
                 posts: 'posts',
                 templates: 'templates',
@@ -128,8 +128,8 @@ function publish() {
         let templatesLoaded = loadTemplates(inDirs.templates, debug);
         let postsLoaded = loadPosts(inDirs.posts, linkOutDirs.posts, debug);
         // TODO: Issue #13 autodetect the correct less files.
-        let lightCssRendered = renderLessToCss('./css/light.less', !test, debug);
-        let darkCssRendered = renderLessToCss('./css/dark.less', !test, debug);
+        let lightCssRendered = renderLessToCss(inDirs.css + '/light.less', !test, debug);
+        let darkCssRendered = renderLessToCss(inDirs.css + '/dark.less', !test, debug);
         let jsLoaded = loadJS(inDirs.js, debug);
 
         // Creation tasks that rely on previously loaded files.

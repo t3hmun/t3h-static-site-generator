@@ -1,0 +1,24 @@
+extends ../templates/universal.pug
+block vars
+    //- Vars used by the universal template to configure metadata.
+    - var page = {};
+    - page.title = 'Home';
+    - page.description = 'Web-log home page.';
+    - page.url = 'index.html';
+block content
+    section
+        h1 Home
+        p.
+            Welcome to my web-log.
+            Write some things here.
+        h2 Recent Posts
+        //- Posts is a list of posts received from the options in the render code.
+        each post in posts.slice().reverse()
+            section
+                h3(class='index-header')
+                    a(href=`${site.baseUrl}/${posts.dir}/${post.urlName}`) #{post.title}
+                div(class='index-date-footer')= post.date.toDateString()
+                if post.description
+                    p(class='index-description')= post.description
+
+

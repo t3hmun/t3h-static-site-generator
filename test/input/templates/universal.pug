@@ -1,0 +1,36 @@
+//- Every page uses this template for a consistent header footer and metadata.
+block vars
+doctype html
+html(lang="en")
+    head
+        title= page.title
+        meta(charset='utf-8')
+        // Informs smaller devices to wrap text inside the screen without scaling down the document.
+        meta(name='viewport', content='width=device-width, initial-scale=1')
+        // Info for robots who want to know about the page.
+        meta(name='description', content=page.description || site.description)
+        link(id='main-css', rel='stylesheet', href=`${site.baseUrl}/${site.outputDir.dirs.css}/dark.css`)
+        link(rel='canonical', href=`${site.baseUrl}/${page.url.replace('index.html', '')}`)
+        link(rel='alternative', type='application/rss+xml', title=site.title, href=`${site.baseUrl}/feed.xml`)
+        // A small non-essential for switching themes.
+        script(src=`${site.baseUrl}/${site.outputDir.dirs.js}/theme.js`)
+    body
+        header
+            div(class='masthead')= site.title
+            nav(class='main-nav')
+                ul
+                    each val in site.nav
+                        li
+                            a(href=`${site.baseUrl}/${val.url}`)= val.text
+                        span |
+                    li
+                        a(id='theme-button', href='#')= `Switch theme`
+        main
+            block content
+
+        footer(class='footer')
+            div(class='hatch-box')
+                a(href='#') Top
+            p CC-BY-SA-4.0
+
+

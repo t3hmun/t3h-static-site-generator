@@ -33,6 +33,7 @@
     "highlight.js": "^9.9.0",
     "less": "^2.7.2",
     "markdown-it": "^8.3.0",
+    "node-json-minify": "^1.0.0",
     "pug": "^2.0.0-beta11",
     "t3h-fs-helper": "^1.0.0"
   }
