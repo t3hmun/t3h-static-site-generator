@@ -102,8 +102,9 @@ function publish() {
         let [site, debug, test] = conf;
 
         // vars with names in past-tense are promises.
-        let dirsCreated = resolveAndCreateDirs(site.inputDir, debug).then(
-            resolveAndCreateDirs(site.outputDir, debug));
+        let dirsCreated = resolveAndCreateDirs(site.inputDir, debug).then(() => {
+            return resolveAndCreateDirs(site.outputDir, debug)
+        });
 
         // # A note on output dirs
         // Output dirs have 2 purposes, define where to write the files, and help name links in pages.
