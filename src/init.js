@@ -1,5 +1,24 @@
 'use strict';
 
+/*
+ * Copyright 2017 t3hmun (Manish Parekh)
+ *
+ * This file is part of t3h-static-site-generator.
+ *
+ *     t3h-static-site-generator is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ *
+ *     t3h-static-site-generator is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License along
+ * with t3h-static-site-generator. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /**
  * Initialises a folder for the web-log generator.
  */
