@@ -16,7 +16,9 @@
     "static",
     "site",
     "generator",
-    "markdown"
+    "markdown",
+    "less",
+    "pug"
   ],
   "author": {
     "name": "Manish Parekh",
