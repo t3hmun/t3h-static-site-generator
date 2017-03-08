@@ -35,5 +35,9 @@
             "js": "js",
             "content": "content"
         }
-    }
+    },
+    "lessFilesToOutput": [
+        ["light.less", "light.css"],
+        ["dark.less", "dark.css"]
+    ]
 }

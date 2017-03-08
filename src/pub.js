@@ -70,7 +70,8 @@ function generateDefaultConfig() {
                 js: 'js',
                 content: 'content'
             }
-        }
+        },
+        lessFilesToOutput: [['main.less', 'main.css']]
     };
 
     return JSON.stringify(site, null, 4);
@@ -152,9 +153,9 @@ function publish() {
         // Read files from disk and perform any processing that doesn't rely on other files.
         let templatesLoaded = loadTemplates(inDirs.templates, debug);
         let postsLoaded = loadPosts(inDirs.posts, linkOutDirs.posts, debug);
-        // TODO: Issue #13 autodetect the correct less files.
-        let lightCssRendered = renderLessToCss(inDirs.css + '/light.less', !test, debug);
-        let darkCssRendered = renderLessToCss(inDirs.css + '/dark.less', !test, debug);
+        let cssRendering = site.lessFilesToOutput.map((cssFile) => {
+            return renderLessToCss(path.join(inDirs.css, cssFile[0]), !test, debug);
+        });
         let jsLoaded = loadJS(inDirs.js, debug);
 
         // Creation tasks that rely on previously loaded files.
@@ -187,12 +188,13 @@ function publish() {
             errorAndExit(err);
         });
 
-        // TODO: Issue #13
-        let writeCSS = Promise.all([lightCssRendered, darkCssRendered]).then((results) => {
-            let [light, dark] = results;
-            let lightPromise = t3hfs.write(writeOutDirs.css, 'light.css', light.css);
-            let darkPromise = t3hfs.write(writeOutDirs.css, 'dark.css', dark.css);
-            return Promise.all([lightPromise, darkPromise]);
+        let writeCSS = Promise.all(cssRendering).then((results) => {
+            let written = [];
+            for (let i = 0; i < site.lessFilesToOutput.length; i++) {
+                // index [1] is the output file name.
+                written.push(t3hfs.write(writeOutDirs.css, site.lessFilesToOutput[i][1], results[i].css));
+            }
+            return Promise.all(written);
         }).catch((err) => {
             errorAndExit(err);
         });
