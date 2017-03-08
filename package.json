@@ -4,7 +4,7 @@
   "description": "Simple markdown static site generator script for a developers web-log.",
   "main": "pub.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "cd test && node ./../src/publish.js test debug",
     "init": "node ./src/init.js"
   },
   "repository": {
