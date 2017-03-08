@@ -1,7 +1,7 @@
 {
   "name": "t3h-static-site-generator",
   "version": "1.0.0",
-  "description": "Simple markdown static site generator script for dev's blogs.",
+  "description": "Simple markdown static site generator script for a developers web-log.",
   "main": "pub.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
