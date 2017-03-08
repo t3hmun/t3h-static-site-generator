@@ -5,7 +5,11 @@
   "main": "pub.js",
   "scripts": {
     "test": "cd test && node ./../src/publish.js test debug",
-    "init": "node ./src/init.js"
+    "init": "node ./src/init.js",
+    "pub": "node publish"
+  },
+  "bin":{
+    "t3hpub": "src/publish.js"
   },
   "repository": {
     "type": "git",
