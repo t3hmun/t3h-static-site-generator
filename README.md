@@ -1,5 +1,7 @@
 # t3h-static-site-generator
 
+_NPM package is being tested, do not use._
+
 My static site generator, used for my own website.
 
 Written for use with Node.js 6+, supports posts in markdown with GFM syntax block and code highlighting.
@@ -54,9 +56,11 @@ $ node publish test
 
 ## Status
 
-_Updated 25th Feb 2017_
+_Updated 08th March 2017_
 
 In development, not ready for use (see Waffle board for progress).
+
+First npm test release in testing.
 
 The development is split into Milestones that signify a major step.
 
@@ -69,7 +73,7 @@ This was importing the old project and making it suitable for deployment as an N
 
 ### Features Milestone
 
-**STATUS**: Just started.
+**STATUS**: Always ongoing.
 
 Milestone to get all basic site features working properly.
 
@@ -84,6 +88,10 @@ Always regarded as low priority.
 
 This is the milestone to get the site (my site) working on GitLab CI (or any service tbh),
 with a custom URL using proper HTTPS.
+
+### NPM Package Milestone
+
+**STATUS**: In progress.
 
 
 ## License

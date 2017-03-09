@@ -1,11 +1,15 @@
 {
   "name": "t3h-static-site-generator",
-  "version": "1.0.0",
-  "description": "Simple markdown static site generator script for dev's blogs.",
+  "version": "1.1.1",
+  "description": "Simple markdown static site generator script for a developers web-log.",
   "main": "pub.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "init": "node ./src/init.js"
+    "test": "cd test && node ./../src/publish.js test debug",
+    "init": "node ./src/init.js",
+    "pub": "node publish"
+  },
+  "bin": {
+    "t3hpub": "src/publish.js"
   },
   "repository": {
     "type": "git",
@@ -16,7 +20,9 @@
     "static",
     "site",
     "generator",
-    "markdown"
+    "markdown",
+    "less",
+    "pug"
   ],
   "author": {
     "name": "Manish Parekh",
